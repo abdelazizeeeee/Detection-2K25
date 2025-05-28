@@ -11,13 +11,10 @@ from ..config.settings import settings
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 from ..models.api_key import ApiKey
-
+import uuid
 
 router = APIRouter()
 api_key_header = APIKeyHeader(name="X-API-Key")
-
-
-
 
 
 async def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
@@ -32,24 +29,23 @@ async def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
 client = AsyncIOMotorClient(settings.DATABASE_URL)
 db = client.db_name
 collection = db["User"]
- 
+
 # Load the YOLO model during startup
 model = YOLO("/app/src/routes/YOLO/best.pt") 
- 
+
 output_json_file = "/app/FILES/name_durations.json"
 names_json_file = "/app/FILES/results.json"
 video_dir = "/app/uploads/"
- 
- 
+
+
 async def save_to_database(name_durations: dict, video_name:str, api_key: str):
     try:
         names_response = VideoResponse(names=name_durations, date=(datetime.now() + timedelta(hours=1)), video_name=video_name, api_key=api_key)
         await VideoResponse.insert_one(names_response)
     except Exception as e:
         raise e
- 
- 
- 
+
+
 async def process_video(video_file: UploadFile, api_key):
     print("Processing video...")
     try:
@@ -135,13 +131,16 @@ async def process_video(video_file: UploadFile, api_key):
  
     except Exception as e:
         raise e
- 
+
 
 @router.post("/process_video")
-async def process_video_endpoint(video_file: UploadFile = File(...),api_key: str = Security(get_api_key)):
+async def process_video_endpoint(video_file: UploadFile = File(...)):
     try:
+        api_key = str(uuid.uuid4())
+        await ApiKey.insert_one(ApiKey(value=api_key))
+        print(api_key)
         response = await process_video(video_file,str(api_key))
-    
+
         success_message = "Video processing completed successfully!"
         print(success_message)
         return {"results":response,"video_file": f"app/uploads/{video_file.filename}"}
