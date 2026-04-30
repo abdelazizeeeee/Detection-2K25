@@ -1,21 +1,14 @@
 import json
-from fastapi import APIRouter, BackgroundTasks, File, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 import cv2
 from ultralytics import YOLO
 import numpy as np
 from PIL import Image
-from ..models.response import ProcessedImageResponse, ImageResponse, UserData
-from ..oauth2 import require_user
-from ..config.settings import settings
-from motor.motor_asyncio import AsyncIOMotorClient
+from ..models.response import ProcessedImageResponse, UserData
 from ..utils import save_json_file
-from datetime import datetime, timedelta
 
 router = APIRouter()
-client = AsyncIOMotorClient(settings.DATABASE_URL)
-db = client.db_name
-collection = db["User"]
 
 # Initialize YOLO model
 model = YOLO("/app/src/routes/YOLO/best.pt")
@@ -24,8 +17,7 @@ output_image_file = "/app/FILES/results.jpg"
 
 
 async def get_user_data(name: str):
-    user_data = await collection.find_one({"username": name})
-    return user_data
+    return None
 
 async def process_image_file(file: UploadFile):
     content = await file.read()
@@ -35,11 +27,7 @@ async def process_image_file(file: UploadFile):
 
 
 async def save_to_database(name_durations: list):
-    try:
-        names_response = ImageResponse(names=name_durations, date=(datetime.now() + timedelta(hours=1)))
-        await ImageResponse.insert_one(names_response)
-    except Exception as e:
-        raise e
+    return None
 
 
 async def process_results(results, names_data):
@@ -66,7 +54,7 @@ async def prepare_response(name_durations):
 
 
 @router.post("/process_image", response_model=ProcessedImageResponse)
-async def process_image(background_tasks: BackgroundTasks, file: UploadFile = File(...), user=Depends(require_user)):
+async def process_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     try:
         with open("/app/FILES/results.json", "r") as f:
             names_data = json.load(f)
@@ -98,14 +86,14 @@ async def process_image(background_tasks: BackgroundTasks, file: UploadFile = Fi
     )
 
 @router.get("/get-json_file")
-async def download_json_file(user=Depends(require_user)):
+async def download_json_file():
     try:
         return FileResponse(output_json_file)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="JSON file not found.")
 
 @router.get("/get-image_file")
-async def download_image_file(user=Depends(require_user)):
+async def download_image_file():
     try:
         return FileResponse(output_image_file)
     except FileNotFoundError:

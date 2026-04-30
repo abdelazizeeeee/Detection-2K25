@@ -1,34 +1,11 @@
 import json
 import os
 import cv2
-from fastapi import APIRouter, File, UploadFile,status
+from fastapi import APIRouter, File, UploadFile
 from ultralytics import YOLO
 import aiofiles
-from ..models.response import VideoResponse  
-from datetime import datetime, timedelta
-from motor.motor_asyncio import AsyncIOMotorClient
-from ..config.settings import settings
-from fastapi import HTTPException, Security
-from fastapi.security import APIKeyHeader
-from ..models.api_key import ApiKey
-import uuid
 
 router = APIRouter()
-api_key_header = APIKeyHeader(name="X-API-Key")
-
-
-async def get_api_key(api_key_header: str = Security(api_key_header)) -> str:
-    key = await ApiKey.find_one(ApiKey.value == api_key_header)
-    if key:
-        return api_key_header
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or missing API Key",
-    )
-
-client = AsyncIOMotorClient(settings.DATABASE_URL)
-db = client.db_name
-collection = db["User"]
 
 # Load the YOLO model during startup
 model = YOLO("/app/src/routes/YOLO/best.pt") 
@@ -37,16 +14,7 @@ output_json_file = "/app/FILES/name_durations.json"
 names_json_file = "/app/FILES/results.json"
 video_dir = "/app/uploads/"
 
-
-async def save_to_database(name_durations: dict, video_name:str, api_key: str):
-    try:
-        names_response = VideoResponse(names=name_durations, date=(datetime.now() + timedelta(hours=1)), video_name=video_name, api_key=api_key)
-        await VideoResponse.insert_one(names_response)
-    except Exception as e:
-        raise e
-
-
-async def process_video(video_file: UploadFile, api_key):
+async def process_video(video_file: UploadFile):
     print("Processing video...")
     try:
         with open(names_json_file, "r") as f:
@@ -91,11 +59,10 @@ async def process_video(video_file: UploadFile, api_key):
         print(name_durations)
         response_data = []
         for name, duration in name_durations.items():
-            user_data = await collection.find_one({"username": name})   
-            email = user_data.get("email") if user_data else "N/A"
-            phone_number = user_data.get("phone_number") if user_data else "N/A"
-            department = user_data.get("department") if user_data else "N/A"
-            role = user_data.get("role") if user_data else "N/A"
+            email = "N/A"
+            phone_number = "N/A"
+            department = "N/A"
+            role = "N/A"
             print(f"Name: {name}, Attendance: {duration}, Email: {email}, Phone: {phone_number}", "\n\n\n")
             name_durations[name] = {
                 "duration": duration,
@@ -115,9 +82,6 @@ async def process_video(video_file: UploadFile, api_key):
             })
  
  
-        video_name = f"app/uploads/{video_file.filename}"
-        await save_to_database(name_durations, video_name,api_key)
-       
         with open(output_json_file, "w") as json_file:
             json.dump(name_durations, json_file)
  
@@ -136,10 +100,7 @@ async def process_video(video_file: UploadFile, api_key):
 @router.post("/process_video")
 async def process_video_endpoint(video_file: UploadFile = File(...)):
     try:
-        api_key = str(uuid.uuid4())
-        await ApiKey.insert_one(ApiKey(value=api_key))
-        print(api_key)
-        response = await process_video(video_file,str(api_key))
+        response = await process_video(video_file)
 
         success_message = "Video processing completed successfully!"
         print(success_message)

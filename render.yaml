@@ -6,19 +6,5 @@ services:
     plan: free
     healthCheckPath: /api/healthchecker
     envVars:
-      - key: DATABASE_URL
-        sync: false
-      - key: MONGO_INITDB_DATABASE
-        sync: false
-      - key: JWT_PUBLIC_KEY
-        sync: false
-      - key: JWT_PRIVATE_KEY
-        sync: false
-      - key: REFRESH_TOKEN_EXPIRES_IN
-        sync: false
-      - key: ACCESS_TOKEN_EXPIRES_IN
-        sync: false
-      - key: JWT_ALGORITHM
-        sync: false
       - key: CLIENT_ORIGIN
         sync: false
