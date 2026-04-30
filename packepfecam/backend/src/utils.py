@@ -7,8 +7,6 @@ import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
-from .models.response import ImageResponse
 from fastapi import HTTPException
 import json
 import os

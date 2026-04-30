@@ -1,12 +1,10 @@
 anyio
 autopep8
 bcrypt
-beanie
 certifi
 cffi
 click
 cryptography
-dnspython
 email-validator
 fastapi
 h11
@@ -18,14 +16,12 @@ itsdangerous
 Jinja2
 lazy-model
 MarkupSafe
-motor
 orjson
 passlib
 pycodestyle
 pycparser
 pydantic
 PyJWT
-pymongo
 python-dotenv
 python-multipart
 PyYAML
@@ -45,7 +41,6 @@ opencv-python
 ultralytics
 PyOpenGL
 aiofiles
-mongoengine
 pytest
 pydantic-settings
 python-jose[cryptography]

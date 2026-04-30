@@ -1,14 +1,5 @@
-from beanie import Document
-from datetime import datetime
 from pydantic import BaseModel
-from typing import Any, Dict, Union, List
-
-
-class VideoResponse(Document): 
-    names: dict
-    date: datetime
-    video_name: str
-    api_key: str
+from typing import List
 
 
 
@@ -19,11 +10,6 @@ class UserData(BaseModel):
     phone_number: str
     department: str = None
     role: str = None
-
-
-class ImageResponse(Document): 
-    names: List[UserData]
-    date: datetime
 
 
 class ProcessedImageResponse(BaseModel):
