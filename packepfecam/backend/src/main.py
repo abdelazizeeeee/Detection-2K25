@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 from src.config.settings import settings
 from src.config.database import startDB
@@ -7,15 +8,17 @@ from src.routes import auth, presence, image_presence, admin
 from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Video Presence API", description="API for Video Presence", version="2.0.0")
-app.mount("/app/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
+UPLOADS_DIR = "/app/uploads"
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/app/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
-origins = [
-    settings.CLIENT_ORIGIN,
-]
+origins = [origin.strip() for origin in settings.CLIENT_ORIGIN.split(",") if origin.strip()]
+if not origins:
+    origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins="*",
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
