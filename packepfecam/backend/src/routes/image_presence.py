@@ -1,4 +1,6 @@
 import json
+import os
+from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 import cv2
@@ -11,9 +13,21 @@ from ..utils import save_json_file
 router = APIRouter()
 
 # Initialize YOLO model
-model = YOLO("/app/src/routes/YOLO/best.pt")
-output_json_file = "/app/FILES/name_durations.json"
-output_image_file = "/app/FILES/results.jpg"
+BASE_DIR = Path(__file__).resolve().parents[2]
+MODEL_PATH = Path(__file__).resolve().parent / "YOLO" / "best.pt"
+FILES_DIR = BASE_DIR / "FILES"
+
+FILES_DIR.mkdir(parents=True, exist_ok=True)
+
+output_json_file = str(FILES_DIR / "name_durations.json")
+output_image_file = str(FILES_DIR / "results.jpg")
+names_json_file = str(FILES_DIR / "results.json")
+
+if not os.path.exists(names_json_file):
+    with open(names_json_file, "w") as f:
+        json.dump([], f)
+
+model = YOLO(str(MODEL_PATH))
 
 
 async def get_user_data(name: str):
@@ -56,7 +70,7 @@ async def prepare_response(name_durations):
 @router.post("/process_image", response_model=ProcessedImageResponse)
 async def process_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     try:
-        with open("/app/FILES/results.json", "r") as f:
+        with open(names_json_file, "r") as f:
             names_data = json.load(f)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Results file not found.")

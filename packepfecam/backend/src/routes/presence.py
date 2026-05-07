@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import cv2
 from fastapi import APIRouter, File, UploadFile
 from ultralytics import YOLO
@@ -8,11 +9,23 @@ import aiofiles
 router = APIRouter()
 
 # Load the YOLO model during startup
-model = YOLO("/app/src/routes/YOLO/best.pt") 
+BASE_DIR = Path(__file__).resolve().parents[2]
+MODEL_PATH = Path(__file__).resolve().parent / "YOLO" / "best.pt"
+FILES_DIR = BASE_DIR / "FILES"
+UPLOADS_DIR = BASE_DIR / "uploads"
 
-output_json_file = "/app/FILES/name_durations.json"
-names_json_file = "/app/FILES/results.json"
-video_dir = "/app/uploads/"
+FILES_DIR.mkdir(parents=True, exist_ok=True)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+output_json_file = str(FILES_DIR / "name_durations.json")
+names_json_file = str(FILES_DIR / "results.json")
+video_dir = str(UPLOADS_DIR)
+
+if not os.path.exists(names_json_file):
+    with open(names_json_file, "w") as f:
+        json.dump([], f)
+
+model = YOLO(str(MODEL_PATH))
 
 async def process_video(video_file: UploadFile):
     print("Processing video...")
